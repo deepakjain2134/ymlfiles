@@ -88,17 +88,19 @@
          regexp: '^bind-address'
          line: 'bind-address = 0.0.0.0'
          backup: yes
-      notify:
-         - Restart mysql
-  handlers:
-     -
-       name: restarting mysql
-       service:
-          name: mysql
-          status: restarted
+    - 
+      name: restart sensu-services
+      service:
+         name: "{{ item }}"
+         state: restarted
+      with_items:
+         - mysql    
+         - apache2
+         
+  
 
 
-     -
+    -
        name : copy the sample config
        copy :
         src: /srv/www/wordpress/wp-config-sample.php
