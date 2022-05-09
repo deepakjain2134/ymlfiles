@@ -1,0 +1,121 @@
+---
+-
+  become: true
+  hosts: webservers
+  tasks:
+    -
+      apt:
+        name:
+          - apache2
+          - ghostscript
+          - libapache2-mod-php
+          - mysql-server
+          - php
+          - php-bcmath
+          - php-curl
+          - php-imagick
+          - php-intl
+          - php-json
+          - php-mbstring
+          - php-mysql
+          - php-xml
+          - php-zip
+          - python3.8
+          - mysql-client
+          - python3-mysqldb
+          - libmysqlclient-dev
+        state: present
+      name: "Install basic package for the wordpress"
+    -
+      file:
+        mode: "0755"
+        path: /srv/www
+        state: directory
+      name: "Create a directory if it does not exist"
+    -
+      get_url:
+        dest: /srv/www
+        mode: "0777"
+        url: "https://wordpress.org/latest.tar.gz"
+      name: "Download wordpress file"
+    -
+      name: "Extract wordpress files"
+      unarchive:
+        dest: /srv/www
+        src: /srv/www/wordpress-5.9.3.tar.gz
+    -
+      file:
+        group: root
+        owner: www-data
+        path: /srv/www/
+        recurse: true
+        state: directory
+      name: "Change file ownership, group and permissions"
+    -
+      copy:
+        content: |
+            <VirtualHost *:80>
+            DocumentRoot /srv/www/wordpress
+            <Directory /srv/www/wordpress>
+            Options FollowSymLinks
+            AllowOverride Limit Options FileInfo
+            DirectoryIndex index.php
+            Require all granted
+            </Directory>
+            <Directory /srv/www/wordpress/wp-content>
+            Options FollowSymLinks
+            Require all granted
+            </Directory>
+            </VirtualHost>
+        dest: /etc/apache2/sites-enabled/000-default.conf
+    -
+      mysql_user:
+        name: deepak
+        password: 12345
+        priv: "*.*:ALL"
+        state: present
+      name: "Create database user with name 'bob' and password '12345' with all database privileges"
+    -
+
+      mysql_db:
+        name: "wordpress"
+        state: present
+      name: "creating db wordpress"
+    -
+      name: "Enable remote login to mysql"
+      lineinfile:
+         path: /etc/mysql/mysql.conf.d/mysqld.cnf
+         regexp: '^bind-address'
+         line: 'bind-address = 0.0.0.0'
+         backup: yes
+      notify:
+         - Restart mysql
+    -
+       name : copy the sample config
+       copy :
+        src: /srv/www/wordpress/wp-config-sample.php
+        dest: /srv/www/wordpress/wp-config.php
+        owner: www-data
+        group: root
+        mode: 0644
+
+    -
+       name: replace the database  name
+       replace:
+        path: /srv/www/wordpress/wp-config.php
+        regexp: "database_name_here"
+        replace: wordpress
+
+    -
+       name: replace the database username name
+       replace:
+        path: /srv/www/wordpress/wp-config.php
+        regexp: "username_here"
+        replace: deepak
+
+    -
+       name: replace the database password name
+       replace:
+        path: /srv/www/wordpress/wp-config.php
+        regexp: "password_here"
+        replace: "12345"
