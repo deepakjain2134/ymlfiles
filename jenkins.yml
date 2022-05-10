@@ -1,0 +1,42 @@
+---
+- hosts: webservers
+  become: true
+  vars:
+    repo_url: https://pkg.jenkins.io/debian-stable/jenkins.io.key
+    repo_path: "deb http://pkg.jenkins.io/debian-stable binary"
+  tasks:
+
+  - name: install java
+    apt:
+        name: default-jdk
+        state: present
+
+
+  - name: add Jenkins key
+    apt_key:
+        url: "{{repo_url}}"
+        state: present
+
+
+
+  - name:  adding jenkins repo to the remote system
+    apt_repository:
+        repo: 'deb http://pkg.jenkins.io/debian-stable binary/'
+        state: present
+
+
+
+  - name:  update package
+    apt:
+        update_cache: yes
+        force_apt_get: yes
+
+  - name: upate Jenkins
+    apt:
+        name: jenkins
+        state: present
+
+  - name: services restart
+    service:
+        name: jenkins
+        state: restart
